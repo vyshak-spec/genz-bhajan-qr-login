@@ -29,7 +29,8 @@ if __name__ == "__main__":
         img = cv2.resize(cv2.imread(f"qr/qr_day{day}.png"), None, fx=0.25, fy=0.25)
         scanned, _, _ = detector.detectAndDecode(img)
         url = scanned.replace(domain, site_root, 1)
-        html = fetch(url).decode()
+        page = urllib.request.urlopen(url, timeout=20)  # follows the trailing-slash redirect
+        html, url = page.read().decode(), page.geturl()
         badge = re.search(r'class="day">([^<]*)', html).group(1).replace("&middot;", "·")
         name = re.search(r"<h1>([^<]*)", html).group(1).replace("&amp;", "&")
         srcs = re.findall(r'<img src="([^"]*)"', html)

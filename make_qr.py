@@ -48,10 +48,10 @@ PAGE = """<!doctype html>
 </head>
 <body>
 <figure class="pass">
-  <img src="../img/vvip_pass.jpg" alt="GenZ Bhajan VVIP Pass">
+  <img src="../../img/vvip_pass.jpg" alt="GenZ Bhajan VVIP Pass">
 </figure>
 <figure class="{shape}">
-  <div class="photo"><img src="../img/event{day}.jpg" alt="{artist}"></div>
+  <div class="photo"><img src="../../img/event{day}.jpg" alt="{artist}"></div>
   <figcaption>
     <span class="day">DAY {day} &middot; {date_upper}</span>
     <h1>{artist}</h1>
@@ -66,9 +66,9 @@ PAGE = """<!doctype html>
 # Earlier links (/1/ ... /9/) forward to the new pages so nothing already shared breaks.
 REDIRECT = """<!doctype html>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=../genz-bhajan/{path}">
+<meta http-equiv="refresh" content="0; url=../genz-bhajan/{path}/">
 <link rel="canonical" href="{url}">
-<a href="../genz-bhajan/{path}">Continue to Day {day}</a>
+<a href="../genz-bhajan/{path}/">Continue to Day {day}</a>
 """
 
 
@@ -88,9 +88,9 @@ def build_site():
     for day, date, artist, _ in EVENTS:
         path = event_path(day, artist)
         shutil.copy(f"events/event{day}.jpg", f"{EVENT_DIR}/img/event{day}.jpg")
-        # Saved as <slug>.html so GitHub Pages serves it at the extension-less URL.
-        os.makedirs(f"{EVENT_DIR}/day{day}")
-        with open(f"{EVENT_DIR}/{path}.html", "w", encoding="utf-8") as f:
+        # A folder with index.html, so any web server answers the extension-less URL.
+        os.makedirs(f"{EVENT_DIR}/{path}")
+        with open(f"{EVENT_DIR}/{path}/index.html", "w", encoding="utf-8") as f:
             w, h = Image.open(f"events/event{day}.jpg").size
             f.write(PAGE.format(day=day, date_upper=date.upper(), artist=artist,
                                 shape="wide" if w / h > 1.8 else "tall"))

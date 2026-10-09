@@ -3,8 +3,28 @@
 Nine QR codes, one per night of GenZ Bhajan (Oct 11–19, 2026, Guru Nanak College, Velachery).
 Scanning a code opens a page with the VVIP Pass followed by that night's artist picture and details.
 
-Pages are served from `docs/` via GitHub Pages on the custom domain `events.iqtechmax.com`
-(DNS: CNAME `events` → `vyshak-spec.github.io`). Old links `/1/` … `/9/` redirect to the new ones.
+The site is the static `docs/` folder, served at `https://events.iqtechmax.com/`.
+Old links `/1/` … `/9/` redirect to the new ones.
+
+## Deploy on a server (Nginx)
+
+```sh
+cd /var/www
+git clone https://github.com/vyshak-spec/genz-bhajan-qr-login.git
+```
+
+```nginx
+server {
+    listen 80;
+    server_name events.iqtechmax.com;
+    root /var/www/genz-bhajan-qr-login/docs;
+    index index.html;
+    location / { try_files $uri $uri/ =404; }
+}
+```
+
+DNS: `A` record `events` → server IP. HTTPS: `sudo certbot --nginx -d events.iqtechmax.com`.
+Update later with `cd /var/www/genz-bhajan-qr-login && git pull`.
 
 | Day | Date | Artist | QR link |
 |---|---|---|---|
