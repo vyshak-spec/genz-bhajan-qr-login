@@ -20,6 +20,10 @@ EVENTS = [
 # Fixed crops applied before trimming, for images with extra chrome around the photo.
 PRE_CROP = {126: (0, 211, 632, 1159)}  # drop status bar and nav bar
 
+# Cut-outs on black whose heads reach the top edge: extra black above (as a fraction of
+# the width) so the "Powered by" watermark in the top-left corner doesn't cover anyone.
+HEADROOM = {153: 0.12, 168: 0.12, 217: 0.12}
+
 
 def load(doc, xref):
     pix = pymupdf.Pixmap(doc, xref)
@@ -52,6 +56,11 @@ if __name__ == "__main__":
         if xref in PRE_CROP:
             img = img.crop(PRE_CROP[xref])
         img = trim_black(img)
+        if xref in HEADROOM:
+            extra = round(img.width * HEADROOM[xref])
+            padded = Image.new("RGB", (img.width, img.height + extra), (0, 0, 0))
+            padded.paste(img, (0, extra))
+            img = padded
         out = f"events/event{day}.jpg"
         img.save(out, quality=90)
         print(f"Day {day} {date} {artist}: {out} {img.size}")

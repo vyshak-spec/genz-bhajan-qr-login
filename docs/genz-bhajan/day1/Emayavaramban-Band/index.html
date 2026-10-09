@@ -16,7 +16,15 @@
            background: #111015; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
   .pass img { display: block; width: 100%; height: auto; }
   .photo { position: relative; }
-  .photo img { display: block; width: 100%; height: auto; }
+  .photo > img { display: block; width: 100%; height: auto; }
+  /* soft shade behind the watermark so it reads on bright photos */
+  .photo::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+                   background: radial-gradient(ellipse at 0 0, rgba(0, 0, 0, .45), rgba(0, 0, 0, 0) 42%); }
+  .powered { position: absolute; top: 12px; left: 14px; width: clamp(80px, 24%, 118px); opacity: .88;
+             pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }
+  .powered span { display: block; margin-bottom: 4px; font-size: 8px; font-weight: 600; letter-spacing: .24em;
+                  color: #fff; }
+  .powered img { display: block; width: 100%; height: auto; }
   .photo::after { content: ""; position: absolute; inset: auto 0 0 0; height: 30%;
                   background: linear-gradient(to bottom, rgba(17, 16, 21, 0), #111015); }
   figcaption { position: relative; margin-top: -36px; padding: 0 22px 22px; }
@@ -36,7 +44,10 @@
   <img src="../../img/vvip_pass.jpg" alt="GenZ Bhajan VVIP Pass">
 </figure>
 <figure class="tall">
-  <div class="photo"><img src="../../img/event1.jpg" alt="Emayavaramban & Band"></div>
+  <div class="photo">
+    <img src="../../img/event1.jpg" alt="Emayavaramban & Band">
+    <div class="powered"><span>POWERED BY</span><img src="../../img/iqtechmax_white.png" alt="IQ Techmax"></div>
+  </div>
   <figcaption>
     <span class="day">DAY 1 &middot; OCT 11</span>
     <h1>Emayavaramban & Band</h1>

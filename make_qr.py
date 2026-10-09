@@ -31,7 +31,15 @@ PAGE = """<!doctype html>
            background: #111015; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }}
   .pass img {{ display: block; width: 100%; height: auto; }}
   .photo {{ position: relative; }}
-  .photo img {{ display: block; width: 100%; height: auto; }}
+  .photo > img {{ display: block; width: 100%; height: auto; }}
+  /* soft shade behind the watermark so it reads on bright photos */
+  .photo::before {{ content: ""; position: absolute; inset: 0; pointer-events: none;
+                   background: radial-gradient(ellipse at 0 0, rgba(0, 0, 0, .45), rgba(0, 0, 0, 0) 42%); }}
+  .powered {{ position: absolute; top: 12px; left: 14px; width: clamp(80px, 24%, 118px); opacity: .88;
+             pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }}
+  .powered span {{ display: block; margin-bottom: 4px; font-size: 8px; font-weight: 600; letter-spacing: .24em;
+                  color: #fff; }}
+  .powered img {{ display: block; width: 100%; height: auto; }}
   .photo::after {{ content: ""; position: absolute; inset: auto 0 0 0; height: 30%;
                   background: linear-gradient(to bottom, rgba(17, 16, 21, 0), #111015); }}
   figcaption {{ position: relative; margin-top: -36px; padding: 0 22px 22px; }}
@@ -51,7 +59,10 @@ PAGE = """<!doctype html>
   <img src="../../img/vvip_pass.jpg" alt="GenZ Bhajan VVIP Pass">
 </figure>
 <figure class="{shape}">
-  <div class="photo"><img src="../../img/event{day}.jpg" alt="{artist}"></div>
+  <div class="photo">
+    <img src="../../img/event{day}.jpg" alt="{artist}">
+    <div class="powered"><span>POWERED BY</span><img src="../../img/iqtechmax_white.png" alt="IQ Techmax"></div>
+  </div>
   <figcaption>
     <span class="day">DAY {day} &middot; {date_upper}</span>
     <h1>{artist}</h1>
@@ -81,10 +92,27 @@ def event_path(day, artist):
     return f"day{day}/{slug(artist)}"
 
 
+def build_watermark(out):
+    """White, transparent, side-by-side version of iqtechmax_logo.png (icon left of the wordmark)."""
+    logo = Image.open("iqtechmax_logo.png").convert("L")
+    icon, word = logo.crop((98, 134, 235, 382)), logo.crop((44, 413, 301, 459))
+    icon = icon.resize((round(icon.width * 96 / icon.height), 96), Image.LANCZOS)
+    gap = 18
+    shade = Image.new("L", (icon.width + gap + word.width, icon.height), 255)
+    shade.paste(icon, (0, 0))
+    shade.paste(word, (icon.width + gap, (icon.height - word.height) // 2))
+    # dark ink -> opaque white, white paper -> transparent
+    alpha = shade.point(lambda v: min(255, round((255 - v) * 1.25)))
+    mark = Image.new("RGBA", shade.size, (255, 255, 255, 0))
+    mark.putalpha(alpha)
+    mark.save(out)
+
+
 def build_site():
     shutil.rmtree(SITE, ignore_errors=True)
     os.makedirs(f"{EVENT_DIR}/img")
     shutil.copy("vvip_pass.jpg", f"{EVENT_DIR}/img/vvip_pass.jpg")
+    build_watermark(f"{EVENT_DIR}/img/iqtechmax_white.png")
     for day, date, artist, _ in EVENTS:
         path = event_path(day, artist)
         shutil.copy(f"events/event{day}.jpg", f"{EVENT_DIR}/img/event{day}.jpg")
