@@ -7,8 +7,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 from extract_events import EVENTS
 
-BASE_URL = "https://vyshak-spec.github.io/genz-bhajan-qr-login/"
+BASE_URL = "https://events.iqtechmax.com/genz-bhajan/"
 SITE = "docs"
+EVENT_DIR = f"{SITE}/genz-bhajan"
 QR_DIR = "qr"
 FONT = "C:/Windows/Fonts/arialbd.ttf"
 
@@ -62,17 +63,40 @@ PAGE = """<!doctype html>
 </html>
 """
 
+# Earlier links (/1/ ... /9/) forward to the new pages so nothing already shared breaks.
+REDIRECT = """<!doctype html>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url=../genz-bhajan/{path}">
+<link rel="canonical" href="{url}">
+<a href="../genz-bhajan/{path}">Continue to Day {day}</a>
+"""
+
+
+def slug(artist):
+    """'Sai Vignesh & Band' -> 'Sai-Vignesh-Band'."""
+    return "-".join(artist.replace("&", " ").split())
+
+
+def event_path(day, artist):
+    return f"day{day}/{slug(artist)}"
+
 
 def build_site():
-    os.makedirs(f"{SITE}/img", exist_ok=True)
-    shutil.copy("vvip_pass.jpg", f"{SITE}/img/vvip_pass.jpg")
+    shutil.rmtree(SITE, ignore_errors=True)
+    os.makedirs(f"{EVENT_DIR}/img")
+    shutil.copy("vvip_pass.jpg", f"{EVENT_DIR}/img/vvip_pass.jpg")
     for day, date, artist, _ in EVENTS:
-        shutil.copy(f"events/event{day}.jpg", f"{SITE}/img/event{day}.jpg")
-        os.makedirs(f"{SITE}/{day}", exist_ok=True)
-        with open(f"{SITE}/{day}/index.html", "w", encoding="utf-8") as f:
+        path = event_path(day, artist)
+        shutil.copy(f"events/event{day}.jpg", f"{EVENT_DIR}/img/event{day}.jpg")
+        # Saved as <slug>.html so GitHub Pages serves it at the extension-less URL.
+        os.makedirs(f"{EVENT_DIR}/day{day}")
+        with open(f"{EVENT_DIR}/{path}.html", "w", encoding="utf-8") as f:
             w, h = Image.open(f"events/event{day}.jpg").size
             f.write(PAGE.format(day=day, date_upper=date.upper(), artist=artist,
                                 shape="wide" if w / h > 1.8 else "tall"))
+        os.makedirs(f"{SITE}/{day}")
+        with open(f"{SITE}/{day}/index.html", "w", encoding="utf-8") as f:
+            f.write(REDIRECT.format(day=day, path=path, url=BASE_URL + path))
 
 
 def build_qr():
@@ -80,7 +104,8 @@ def build_qr():
     big, small = ImageFont.truetype(FONT, 44), ImageFont.truetype(FONT, 30)
     for day, date, artist, _ in EVENTS:
         qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=20, border=4)
-        qr.add_data(f"{BASE_URL}{day}/")
+        url = BASE_URL + event_path(day, artist)
+        qr.add_data(url)
         code = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
         card = Image.new("RGB", (code.width, code.height + 130), "white")
@@ -90,7 +115,7 @@ def build_qr():
         draw.text((cx, code.height + 10), f"DAY {day}  |  {date}", font=big, fill="black", anchor="mt")
         draw.text((cx, code.height + 70), artist, font=small, fill="#444444", anchor="mt")
         card.save(f"{QR_DIR}/qr_day{day}.png")
-        print(f"qr/qr_day{day}.png -> {BASE_URL}{day}/")
+        print(f"qr/qr_day{day}.png -> {url}")
 
 
 if __name__ == "__main__":
