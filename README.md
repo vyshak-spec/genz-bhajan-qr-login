@@ -6,7 +6,29 @@ Scanning a code opens a page with the VVIP Pass followed by that night's artist 
 The site is the static `docs/` folder, served at `https://events.iqtechmax.com/`.
 Old links `/1/` … `/9/` redirect to the new ones.
 
-## Deploy on a server (Nginx)
+## How updates work
+
+1. Edit the content (pictures in `events/`, `vvip_pass.jpg`, or the page template in `make_qr.py`),
+   then run `python make_qr.py` to rebuild `docs/`.
+2. Commit and push to `main`.
+3. GitHub Actions checks that all 9 printed QR links still exist, then updates the server
+   automatically (usually under a minute). Progress is on the repo's **Actions** tab.
+
+**The QR codes are printed. Never rename or move these 9 folders in `docs/`:**
+
+```
+genz-bhajan/day1/Emayavaramban-Band     genz-bhajan/day6/Sai-Vignesh-Band
+genz-bhajan/day2/Skanda-Band            genz-bhajan/day7/Iskcon-Band
+genz-bhajan/day3/Varahi-Band            genz-bhajan/day8/Thisram-Band
+genz-bhajan/day4/Bridge-Academy         genz-bhajan/day9/Sharanya-Srinivas-Band
+genz-bhajan/day5/Sarangi-Band
+```
+
+If one must move, keep the old folder with an `index.html` that redirects to the new place
+(see `docs/1/index.html` for an example). A push that removes any of them fails the check and is
+not deployed (`scripts/check_qr_links.py`).
+
+## Server setup (one time, Nginx)
 
 ```sh
 cd /var/www
@@ -24,7 +46,8 @@ server {
 ```
 
 DNS: `A` record `events` → server IP. HTTPS: `sudo certbot --nginx -d events.iqtechmax.com`.
-Update later with `cd /var/www/genz-bhajan-qr-login && git pull`.
+Auto-deploy (`.github/workflows/deploy.yml`) needs the repo secrets `DEPLOY_HOST`, `DEPLOY_USER`
+and `DEPLOY_SSH_KEY`.
 
 | Day | Date | Artist | QR link |
 |---|---|---|---|
@@ -47,6 +70,8 @@ Update later with `cd /var/www/genz-bhajan-qr-login && git pull`.
 - `extract_events.py` – crops the artist pictures out of `GenZ_Bhajan_Sponsorship_Deck_.pdf` (not committed; place it in the project root)
 - `make_qr.py` – builds `docs/` and the QR images (`BASE_URL` sets the link)
 - `verify_qr.py` – scans each QR and checks the live page shows the right day, artist and picture
+- `scripts/check_qr_links.py` – fails if any of the 9 printed QR paths is missing (`--live URL` checks the site)
+- `.github/workflows/deploy.yml` – on every push to `main`: QR link check → deploy to server → live check
 
 ## Rebuild
 
@@ -54,8 +79,7 @@ Update later with `cd /var/www/genz-bhajan-qr-login && git pull`.
 pip install -r requirements.txt
 python extract_events.py   # only if the deck or picture choices change
 python make_qr.py
+python scripts/check_qr_links.py   # same check the deploy runs
 git add . && git commit -m "Update event pages" && git push
-python verify_qr.py        # after GitHub Pages redeploys
-# before the custom domain is live:
-python verify_qr.py https://vyshak-spec.github.io/genz-bhajan-qr-login/
+python verify_qr.py        # after the deploy finishes
 ```
